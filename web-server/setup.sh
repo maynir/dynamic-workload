@@ -57,7 +57,7 @@ ssh -i "$KEY_PEM" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubunt
     sudo apt-get install -y nodejs git > /dev/null
     echo "Cloning maynir/dynamic-workload.git..."
     git clone https://github.com/maynir/dynamic-workload.git
-    cd dynamic-workload
+    cd dynamic-workload/web-server
     echo "Runing npm install..."
     sudo npm install > /dev/null
     echo "Starting server..."
