@@ -4,6 +4,7 @@ const fs = require('fs');
 const WorkerNode = require('./workerNode');
 const crypto = require('crypto');
 const path = require('path');
+const { exec } = require('child_process');
 
 const app = express()
 const port = 5000
@@ -74,7 +75,18 @@ app.post('/pullCompleted', (req, res) => {
 });
 
 function startNewWorker() {
-
+  numOfCurrentWorkers++;
+  exec('./../worker/setup_worker.sh', (error, stdout, stderr) => {
+    if (error) {
+      numOfCurrentWorkers--;
+      logStream.write(`Error starting EC2 instance: ${error.message}`);
+    }
+    if (stderr) {
+      numOfCurrentWorkers--;
+      logStream.write(`Error starting EC2 instance: ${stderr}`);
+    }
+    logStream.write('EC2 instance started successfully');
+  });
 }
 
 function checkWorksAreHandled() {
