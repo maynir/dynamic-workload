@@ -8,7 +8,7 @@ echo "Create key pair $KEY_PEM_1 to connect to instances and save locally"
 sudo aws ec2 create-key-pair --key-name "$KEY_NAME_1" | jq -r ".KeyMaterial" > "$KEY_PEM_1"
 
 # secure the key pair
-chmod 400 "$KEY_NAME_1"
+chmod 400 "$KEY_PEM_1"
 
 SEC_GRP_1="my-sg-$(date +'%s')-1"
 
@@ -33,7 +33,7 @@ echo "Create key pair $KEY_PEM_2 to connect to instances and save locally"
 sudo aws ec2 create-key-pair --key-name "$KEY_NAME_2" | jq -r ".KeyMaterial" > "$KEY_PEM_2"
 
 # secure the key pair
-chmod 400 "$KEY_NAME_2"
+chmod 400 "$KEY_PEM_2"
 
 SEC_GRP_2="my-sg-$(date +'%s')-2"
 
@@ -46,12 +46,21 @@ aws ec2 authorize-security-group-ingress --group-name "$SEC_GRP_2" --port 22 --p
 echo "Setup rule allowing HTTP (port 5000) access to instance 2 from $MY_IP only"
 aws ec2 authorize-security-group-ingress --group-name "$SEC_GRP_2" --port 5000 --protocol tcp --cidr "$MY_IP"/32 > /dev/null
 
-# Allow communication between instances
-echo "Setup rule allowing traffic from instance 1 to instance 2"
-aws ec2 authorize-security-group-ingress --group-name "$SEC_GRP_1" --protocol all --source-group "$SEC_GRP_2" > /dev/null
+# Allow SSH traffic from instance 1 to instance 2
+echo "Setup rule allowing SSH access from instance 1 to instance 2"
+aws ec2 authorize-security-group-ingress --group-name "$SEC_GRP_1" --protocol tcp --port 22 --source-group "$SEC_GRP_2" > /dev/null
 
-echo "Setup rule allowing traffic from instance 2 to instance 1"
-aws ec2 authorize-security-group-ingress --group-name "$SEC_GRP_2" --protocol all --source-group "$SEC_GRP_1" > /dev/null
+# Allow SSH traffic from instance 2 to instance 1
+echo "Setup rule allowing SSH access from instance 2 to instance 1"
+aws ec2 authorize-security-group-ingress --group-name "$SEC_GRP_2" --protocol tcp --port 22 --source-group "$SEC_GRP_1" > /dev/null
+
+# Allow HTTP traffic from instance 1 to instance 2
+echo "Setup rule allowing HTTP access from instance 1 to instance 2"
+aws ec2 authorize-security-group-ingress --group-name "$SEC_GRP_1" --protocol tcp --port 5000 --source-group "$SEC_GRP_2" > /dev/null
+
+# Allow HTTP traffic from instance 2 to instance 1
+echo "Setup rule allowing HTTP access from instance 2 to instance 1"
+aws ec2 authorize-security-group-ingress --group-name "$SEC_GRP_2" --protocol tcp --port 5000 --source-group "$SEC_GRP_1" > /dev/null
 
 #UBUNTU_20_04_AMI="ami-042e8287309f5df03"
 UBUNTU_20_04_AMI="ami-08bac620dc84221eb"
