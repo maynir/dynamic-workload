@@ -44,7 +44,6 @@ app.post('/pullCompleted', (req, res) => {
   const top = req.query.top;
   const numItems = parseInt(top);
 
-
   const latestCompletedWork = CompleteWorkQueue.slice(-numItems);
 
   res.json(latestCompletedWork);
