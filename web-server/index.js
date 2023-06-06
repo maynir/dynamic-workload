@@ -11,6 +11,11 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Parse command-line arguments
+const args = process.argv.slice(2);
+const instanceIP = args[0];
+const peerIP = args[1];
+
 let workQueue = []
 let CompleteWorkQueue = []
 let numOfCurrentWorkers = 0
@@ -19,7 +24,7 @@ let nextWorkId = 1;
 const maxNumOfWorkers = 0
 
 app.get('/', (req, res) => {
-  res.send("Hello World, this is May's Dynamic Workload project!")
+  res.send(`Instance IP: ${instanceIP}, Peer IP: ${peerIP}`);
 })
 
 app.put('/enqueue', (req, res) => {
