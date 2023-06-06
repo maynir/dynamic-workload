@@ -16,6 +16,7 @@ app.use(express.json());
 // Parse command-line arguments
 const instanceIP = process.argv[3];
 const peerIP = process.argv[5]
+const securityGroup = process.argv[7]
 
 let workQueue = []
 let CompleteWorkQueue = []
