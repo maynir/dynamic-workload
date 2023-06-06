@@ -12,9 +12,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Parse command-line arguments
-const args = process.argv.slice(2);
-const instanceIP = args[0];
-const peerIP = args[1];
+const instanceIP = process.argv[1];
+const peerIP = process.argv[3]
 
 let workQueue = []
 let CompleteWorkQueue = []
