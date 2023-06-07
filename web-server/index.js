@@ -1,11 +1,24 @@
 const express = require('express')
 const cors = require('cors');
 const fs = require('fs');
-const WorkerNode = require('./workerNode');
-const crypto = require('crypto');
 const path = require('path');
 const { exec } = require('child_process');
 const AWS = require('aws-sdk');
+
+// Parse command-line arguments
+const instanceIP = process.argv[3];
+const peerIP = process.argv[5];
+const securityGroup = process.argv[7];
+const keyName = process.argv[9];
+const awsKey = process.argv[11];
+const awsSecreteKey = process.argv[13];
+const awsRegion = process.argv[15];
+
+AWS.config.update({
+  accessKeyId: awsKey,
+  secretAccessKey: awsSecreteKey,
+  region: awsRegion,
+});
 
 const app = express()
 const port = 5000
@@ -14,12 +27,6 @@ const ec2 = new AWS.EC2();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
-// Parse command-line arguments
-const instanceIP = process.argv[3];
-const peerIP = process.argv[5];
-const securityGroup = process.argv[7];
-const keyName = process.argv[9];
 
 let workQueue = [];
 let completeWorkQueue = [];
