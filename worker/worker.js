@@ -1,10 +1,11 @@
+PROD = true;
 const crypto = require('crypto');
 const axios = require('axios');
 const path = require("path");
 const fs = require("fs");
 
-const firstInstanceIP = process.argv[3];
-const secondInstanceIP = process.argv[5];
+const firstInstanceIP = PROD ? process.argv[3] : 'localhost';
+const secondInstanceIP = PROD ? process.argv[5] : 'localhost';
 let isFirstInstanceTurn = true;
 
 const logFilePath = path.join(__dirname, 'worker.log');
