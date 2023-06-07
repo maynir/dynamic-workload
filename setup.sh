@@ -86,7 +86,7 @@ ssh -i "$KEY_PEM" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubunt
     echo "Running npm install..."
     sudo npm install > /dev/null
     echo "Starting server..."
-    nohup node index.js --instance "$PRIVATE_IP_1" --peer "$PRIVATE_IP_2" --securityGroup "$SEC_GRP" &>/dev/null &
+    nohup node index.js --instance "$PRIVATE_IP_1" --peer "$PRIVATE_IP_2" --securityGroup "$SEC_GRP" --keyName "$KEY_NAME" &>/dev/null &
     echo "Server up and running!"
     exit
     exit
@@ -106,7 +106,7 @@ ssh -i "$KEY_PEM" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubunt
     echo "Running npm install..."
     sudo npm install > /dev/null
     echo "Starting server..."
-    nohup node index.js --instance "$PRIVATE_IP_2" --peer "$PRIVATE_IP_1" --securityGroup "$SEC_GRP" &>/dev/null &
+    nohup node index.js --instance "$PRIVATE_IP_2" --peer "$PRIVATE_IP_1" --securityGroup "$SEC_GRP" --keyName "$KEY_NAME" &>/dev/null &
     echo "Server up and running!"
     exit
     exit

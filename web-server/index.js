@@ -5,9 +5,11 @@ const WorkerNode = require('./workerNode');
 const crypto = require('crypto');
 const path = require('path');
 const { exec } = require('child_process');
+const AWS = require('aws-sdk');
 
 const app = express()
 const port = 5000
+const ec2 = new AWS.EC2();
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -15,14 +17,15 @@ app.use(express.json());
 
 // Parse command-line arguments
 const instanceIP = process.argv[3];
-const peerIP = process.argv[5]
-const securityGroup = process.argv[7]
+const peerIP = process.argv[5];
+const securityGroup = process.argv[7];
+const keyName = process.argv[9];
 
-let workQueue = []
-let CompleteWorkQueue = []
-let numOfCurrentWorkers = 0
+let workQueue = [];
+let CompleteWorkQueue = [];
+let numOfCurrentWorkers = 0;
 let nextWorkId = 1;
-const maxNumOfWorkers = 0
+const maxNumOfWorkers = 0;
 
 const logFilePath = path.join(__dirname, 'server.log');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
@@ -90,14 +93,53 @@ function startNewWorker() {
   });
 }
 
+async function startNewWorkerWithSDK() {
+  numOfCurrentWorkers++;
+  try {
+    const userDataScript = `#!/bin/bash
+    # set -o xtrace
+    echo "Updating apt-get..."
+    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - > /dev/null
+    sudo apt-get update > /dev/null
+    echo "Installing nodejs, npm, git..."
+    sudo apt-get install -y nodejs git > /dev/null
+    echo "Cloning maynir/dynamic-workload.git..."
+    git clone https://github.com/maynir/dynamic-workload.git
+    cd dynamic-workload/worker
+    echo "Running npm install..."
+    sudo npm install > /dev/null
+    echo "Running worker..."
+    echo "Worker is up and running!"
+    `;
+
+    const params = {
+      ImageId: 'ami-08bac620dc84221eb',
+      InstanceType: 't3.micro',
+      KeyName: keyName,
+      SecurityGroupIds: [securityGroup],
+      MinCount: 1,
+      MaxCount: 1,
+      UserData: Buffer.from(userDataScript).toString('base64'),
+    };
+
+    const data = await ec2.runInstances(params).promise();
+
+    const instanceId = data.Instances[0].InstanceId;
+    console.log(`New EC2 instance started with ID: ${instanceId}`);
+  } catch (error) {
+    numOfCurrentWorkers--;
+    console.error('Error starting EC2 instance:', error);
+  }
+}
+
 function checkWorksAreHandled() {
   logStream.write('Check works are handled');
   const {timeOfArrival} = workQueue[0];
   const diff = Date.now() - timeOfArrival;
-  const diffInMin = diff/ 1000 / 60;
+  const diffInSec = diff/ 1000;
 
-  if(diffInMin > 2) {
-    startNewWorker();
+  if(diffInSec > 20 && numOfCurrentWorkers < maxNumOfWorkers) {
+    startNewWorkerWithSDK();
   }
 }
 setInterval(checkWorksAreHandled, 60000);
