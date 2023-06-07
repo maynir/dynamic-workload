@@ -99,21 +99,6 @@ app.post('/pullCompleted', (req, res) => {
   res.send(summaryCompletedWorks)
 });
 
-function startNewWorker() {
-  numOfCurrentWorkers++;
-  exec('./../worker/setup_worker.sh', (error, stdout, stderr) => {
-    if (error) {
-      numOfCurrentWorkers--;
-      log(`Error starting EC2 instance: ${error.message}`);
-    }
-    if (stderr) {
-      numOfCurrentWorkers--;
-      log(`Error starting EC2 instance: ${stderr}`);
-    }
-    log('EC2 instance started successfully');
-  });
-}
-
 async function startNewWorkerWithSDK() {
   numOfCurrentWorkers++;
   try {
