@@ -27,3 +27,15 @@
 ```bash
 curl -X PUT http://<public_ip>:5000/enqueue?iterations=10 -d "data=Hello"
 ```
+
+### `/pullCompleted`
+
+#### Request
+
+#### Response
+
+#### Example
+
+```bash
+curl -X POST http://<public_ip>:5000/pullCompleted?top=2
+```
