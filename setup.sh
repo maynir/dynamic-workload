@@ -72,6 +72,10 @@ echo "New instance 2 $INSTANCE_ID_2 @ $PUBLIC_IP_2"
 
 echo "For debug: ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@$PUBLIC_IP_2"
 
+AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id)
+AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key)
+AWS_REGION=$(aws configure get region)
+
 # Execute script on machine 1
 echo "Executing script on instance 1..."
 ssh -i "$KEY_PEM" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@"$PUBLIC_IP_1" /bin/bash << EOF
@@ -86,7 +90,7 @@ ssh -i "$KEY_PEM" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubunt
     echo "Running npm install..."
     sudo npm install > /dev/null
     echo "Starting server..."
-    nohup node index.js --instance "$PRIVATE_IP_1" --peer "$PRIVATE_IP_2" --securityGroup "$SEC_GRP" --keyName "$KEY_NAME" &>/dev/null &
+    nohup node index.js --instance "$PRIVATE_IP_1" --peer "$PRIVATE_IP_2" --securityGroup "$SEC_GRP" --keyName "$KEY_NAME" --awsKey "$AWS_ACCESS_KEY_ID" --awsSecreteKey "$AWS_SECRET_ACCESS_KEY" --awsRegion "$AWS_REGION" &>/dev/null &
     echo "Server up and running!"
     exit
     exit
@@ -106,7 +110,7 @@ ssh -i "$KEY_PEM" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubunt
     echo "Running npm install..."
     sudo npm install > /dev/null
     echo "Starting server..."
-    nohup node index.js --instance "$PRIVATE_IP_2" --peer "$PRIVATE_IP_1" --securityGroup "$SEC_GRP" --keyName "$KEY_NAME" &>/dev/null &
+    nohup node index.js --instance "$PRIVATE_IP_2" --peer "$PRIVATE_IP_1" --securityGroup "$SEC_GRP" --keyName "$KEY_NAME" --awsKey "$AWS_ACCESS_KEY_ID" --awsSecreteKey "$AWS_SECRET_ACCESS_KEY" --awsRegion "$AWS_REGION" &>/dev/null &
     echo "Server up and running!"
     exit
     exit

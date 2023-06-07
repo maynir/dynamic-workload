@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node index.js --instance \"localhost\" --peer \"localhost\" --securityGroup \"securityGroup\" --keyName \"keyName\" --awsKey \"awsKey\" --awsSecreteKey \"awsSecreteKey\" --awsRegion \"awsRegion\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
