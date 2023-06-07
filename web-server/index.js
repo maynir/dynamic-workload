@@ -57,19 +57,26 @@ app.put('/enqueue', (req, res) => {
     timeOfArrival: Date.now()
   };
 
+  log(`New work item: ${JSON.stringify(workItem)}`);
+
   workQueue.push(workItem);
+
+  log(`Work queue: ${JSON.stringify(workQueue)}`);
 
   res.json({ id: workId });
 });
 
 app.put('/dequeue', (req, res) => {
   const workItem = workQueue.shift() || {};
+  log(`Work item: ${JSON.stringify(workItem)}`);
+  log(`Work queue: ${JSON.stringify(workQueue)}`);
   res.json(workItem);
 });
 
 app.put('/updateWorkDone', (req, res) => {
   const {id, result} = req.body;
   completeWorkQueue.push({id, result});
+  log(`Complete work queue: ${JSON.stringify(completeWorkQueue)}`);
   res.send('OK');
 });
 
@@ -79,6 +86,8 @@ app.post('/pullCompleted', (req, res) => {
 
   const latestCompletedWork = completeWorkQueue.splice(0, numItems)
   const summaryCompletedWorks = latestCompletedWork.map(({result, id} )=> ({id, result}));
+
+  log(`${numItems} latest completed works: ${JSON.stringify(summaryCompletedWorks)}`);
 
   res.send(summaryCompletedWorks)
 });
@@ -128,6 +137,7 @@ async function startNewWorkerWithSDK() {
       UserData: Buffer.from(userDataScript).toString('base64'),
     };
 
+    log('Creating new EC2 worker instance...')
     const data = await ec2.runInstances(params).promise();
 
     const instanceId = data.Instances[0].InstanceId;
@@ -140,11 +150,12 @@ async function startNewWorkerWithSDK() {
 
 async function checkWorksAreHandled() {
   log('Check works are handled');
-  const {timeOfArrival} = workQueue[0];
+  const {id, timeOfArrival} = workQueue[0];
   const diff = Date.now() - timeOfArrival;
   const diffInSec = diff/ 1000;
 
   if(diffInSec > 20 && numOfCurrentWorkers < maxNumOfWorkers) {
+    log(`Found work with id ${id} waiting for ${diffInSec} seconds`);
     await startNewWorkerWithSDK();
   }
 }
