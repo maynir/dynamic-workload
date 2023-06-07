@@ -11,13 +11,13 @@ const logFilePath = path.join(__dirname, 'worker.log');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 
 function work(buffer, iterations) {
-    let output = crypto.createHash('sha512').update(buffer).digest();
+    let output = crypto.createHash('sha512').update(buffer).digest('hex');
 
     for (let i = 0; i < iterations - 1; i++) {
-        output = crypto.createHash('sha512').update(output).digest();
+        output = crypto.createHash('sha512').update(output).digest('hex');
     }
 
-    return output;
+    return output.toString();
 }
 
 async function processWork() {
@@ -45,7 +45,7 @@ async function processWork() {
             log('No work available.');
         }
     } catch (error) {
-        log('Error occurred while processing work:', error);
+        log(`Error occurred while processing work: ${JSON.stringify(error)}`);
     }
 }
 
@@ -53,8 +53,7 @@ function log(msg){
     logStream.write(`${msg}\r\n`);
 }
 
-setInterval(processWork, 30 * 1000); // Every 30 sec
-
+setInterval(processWork, 5 * 1000);
 
 // const data = 'Hello, world!';
 // const buffer = Buffer.from(data, 'utf-8');

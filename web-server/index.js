@@ -33,8 +33,9 @@ const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 app.use((req, res, next) => {
   const { method, url, ip, params } = req;
   const timestamp = new Date().toISOString();
-  const logMessage = `${timestamp} - ${ip} - ${method} ${url} - Params: ${JSON.stringify(params)}\n`;
+  const logMessage = `${timestamp} - ${ip} - ${method} ${url} - Params: ${JSON.stringify(params)}`;
 
+  log('');
   log(logMessage);
 
   next();
@@ -46,8 +47,8 @@ app.get('/', (req, res) => {
 
 app.put('/enqueue', (req, res) => {
   const iterations = req.query.iterations;
-  const {buffer} = req.body;
-  const workId = `${++nextWorkId}-${instanceIP}`;
+  const buffer = req.body.data;
+  const workId = `${nextWorkId++}-${instanceIP}`;
 
   const workItem = {
     id: workId,
