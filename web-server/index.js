@@ -99,21 +99,6 @@ app.post('/pullCompleted', (req, res) => {
   res.send(summaryCompletedWorks)
 });
 
-function startNewWorker() {
-  numOfCurrentWorkers++;
-  exec('./../worker/setup_worker.sh', (error, stdout, stderr) => {
-    if (error) {
-      numOfCurrentWorkers--;
-      log(`Error starting EC2 instance: ${error.message}`);
-    }
-    if (stderr) {
-      numOfCurrentWorkers--;
-      log(`Error starting EC2 instance: ${stderr}`);
-    }
-    log('EC2 instance started successfully');
-  });
-}
-
 async function startNewWorkerWithSDK() {
   numOfCurrentWorkers++;
   try {
@@ -145,7 +130,6 @@ async function startNewWorkerWithSDK() {
     };
 
     log('Creating new EC2 worker instance...')
-    log(`Params for creation: ${JSON.stringify(params)}`)
     const data = await ec2.runInstances(params).promise();
 
     const instanceId = data.Instances[0].InstanceId;
@@ -163,14 +147,12 @@ async function checkWorksAreHandled() {
   const diff = Date.now() - timeOfArrival;
   const diffInSec = diff/ 1000;
 
-  if(diffInSec > 20 && numOfCurrentWorkers < maxNumOfWorkers) {
-    log(`Found work with id ${id} waiting for ${diffInSec} seconds`);
-    await startNewWorkerWithSDK();
-  } else {
-    log('Works are on time');
-  }
+  if(diffInSec <= 20) return log('Works are on time');
+  if(numOfCurrentWorkers >= maxNumOfWorkers) return log(`Reached max number of workers = ${maxNumOfWorkers}`);
+  log(`Found work with id ${id} waiting for ${diffInSec} seconds`);
+  await startNewWorkerWithSDK();
 }
-setInterval(checkWorksAreHandled, 10 * 1000);
+setInterval(checkWorksAreHandled, 40 * 1000);
 
 function log(msg){
   logStream.write(`${msg}\r\n`);
