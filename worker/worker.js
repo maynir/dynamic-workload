@@ -1,9 +1,14 @@
 const crypto = require('crypto');
 const axios = require('axios');
+const path = require("path");
+const fs = require("fs");
 
 const firstInstanceIP = process.argv[3];
 const secondInstanceIP = process.argv[5];
 let isFirstInstanceTurn = true;
+
+const logFilePath = path.join(__dirname, 'worker.log');
+const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 
 function work(buffer, iterations) {
     let output = crypto.createHash('sha512').update(buffer).digest();
@@ -20,22 +25,32 @@ async function processWork() {
         const instanceIP = isFirstInstanceTurn ? firstInstanceIP : secondInstanceIP;
         isFirstInstanceTurn = !isFirstInstanceTurn;
 
+        log(`Calling: http://${instanceIP}:5000/dequeue`);
+
         const response = await axios.put(`http://${instanceIP}:5000/dequeue`);
         const workItem = response.data;
+
+        log(`workItem: ${JSON.stringify(workItem)}`);
 
         if (Object.keys(workItem).length !== 0 ) {
             const { buffer, iterations, id } = workItem;
             const result = work(buffer, iterations);
 
+            log(`Calling: http://${instanceIP}:5000/updateWorkDone, ${JSON.stringify({id, result})}`);
+
             await axios.put(`http://${instanceIP}:5000/updateWorkDone`,{id, result})
             // Do something with the result
-            console.log('Work completed:', result);
+            log('Work completed:', result);
         } else {
-            console.log('No work available.');
+            log('No work available.');
         }
     } catch (error) {
-        console.error('Error occurred while processing work:', error);
+        log('Error occurred while processing work:', error);
     }
+}
+
+function log(msg){
+    logStream.write(`${msg}\n`);
 }
 
 setInterval(processWork, 30 * 1000); // Every 30 sec
