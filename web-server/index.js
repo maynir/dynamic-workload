@@ -25,7 +25,7 @@ let workQueue = [];
 let completeWorkQueue = [];
 let numOfCurrentWorkers = 0;
 let nextWorkId = 1;
-const maxNumOfWorkers = 0;
+const maxNumOfWorkers = 3;
 
 const logFilePath = path.join(__dirname, 'server.log');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
@@ -131,25 +131,26 @@ async function startNewWorkerWithSDK() {
       ImageId: 'ami-08bac620dc84221eb',
       InstanceType: 't3.micro',
       KeyName: keyName,
-      SecurityGroupIds: [securityGroup],
+      SecurityGroups: [securityGroup],
       MinCount: 1,
       MaxCount: 1,
       UserData: Buffer.from(userDataScript).toString('base64'),
     };
 
     log('Creating new EC2 worker instance...')
+    log(`Params for creation: ${JSON.stringify(params)}`)
     const data = await ec2.runInstances(params).promise();
 
     const instanceId = data.Instances[0].InstanceId;
     log(`New EC2 instance started with ID: ${instanceId}`);
   } catch (error) {
     numOfCurrentWorkers--;
-    log('Error starting EC2 instance:', error);
+    log(`Error starting EC2 instance: ${JSON.stringify(error)}`);
   }
 }
 
 async function checkWorksAreHandled() {
-  log('Check works are handled');
+  log('Check works are handled...');
   const {id, timeOfArrival} = workQueue[0];
   const diff = Date.now() - timeOfArrival;
   const diffInSec = diff/ 1000;
@@ -157,9 +158,11 @@ async function checkWorksAreHandled() {
   if(diffInSec > 20 && numOfCurrentWorkers < maxNumOfWorkers) {
     log(`Found work with id ${id} waiting for ${diffInSec} seconds`);
     await startNewWorkerWithSDK();
+  } else {
+    log('Works are on time');
   }
 }
-instanceIP !== 'localhost' && setInterval(checkWorksAreHandled, 60 * 1000);
+setInterval(checkWorksAreHandled, 10 * 1000);
 
 function log(msg){
   logStream.write(`${msg}\r\n`);
