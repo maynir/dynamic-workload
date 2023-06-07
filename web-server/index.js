@@ -1,4 +1,3 @@
-PROD = true;
 const express = require('express')
 const cors = require('cors');
 const fs = require('fs');
@@ -17,10 +16,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Parse command-line arguments
-const instanceIP = PROD ? process.argv[3] : 'localhost';
-const peerIP = PROD ? process.argv[5] : 'localhost';
-const securityGroup = PROD ? process.argv[7] : 'securityGroup';
-const keyName = PROD ? process.argv[9] : 'keyName';
+const instanceIP = process.argv[3];
+const peerIP = process.argv[5];
+const securityGroup = process.argv[7];
+const keyName = process.argv[9];
 
 let workQueue = [];
 let completeWorkQueue = [];
@@ -159,10 +158,10 @@ async function checkWorksAreHandled() {
     await startNewWorkerWithSDK();
   }
 }
-PROD && setInterval(checkWorksAreHandled, 60 * 1000);
+instanceIP !== 'localhost' && setInterval(checkWorksAreHandled, 60 * 1000);
 
 function log(msg){
-  logStream.write(`${msg}\n`);
+  logStream.write(`${msg}\r\n`);
 }
 
 app.listen(port, () => {

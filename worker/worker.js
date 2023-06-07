@@ -1,11 +1,10 @@
-PROD = true;
 const crypto = require('crypto');
 const axios = require('axios');
 const path = require("path");
 const fs = require("fs");
 
-const firstInstanceIP = PROD ? process.argv[3] : 'localhost';
-const secondInstanceIP = PROD ? process.argv[5] : 'localhost';
+const firstInstanceIP = process.argv[3];
+const secondInstanceIP =process.argv[5];
 let isFirstInstanceTurn = true;
 
 const logFilePath = path.join(__dirname, 'worker.log');
@@ -51,7 +50,7 @@ async function processWork() {
 }
 
 function log(msg){
-    logStream.write(`${msg}\n`);
+    logStream.write(`${msg}\r\n`);
 }
 
 setInterval(processWork, 30 * 1000); // Every 30 sec
