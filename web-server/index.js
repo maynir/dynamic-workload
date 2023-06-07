@@ -22,7 +22,7 @@ const securityGroup = process.argv[7];
 const keyName = process.argv[9];
 
 let workQueue = [];
-let CompleteWorkQueue = [];
+let completeWorkQueue = [];
 let numOfCurrentWorkers = 0;
 let nextWorkId = 1;
 const maxNumOfWorkers = 0;
@@ -46,19 +46,17 @@ app.get('/', (req, res) => {
 
 app.put('/enqueue', (req, res) => {
   const iterations = req.query.iterations;
-  const data = req.body;
+  const {buffer} = req.body;
   const workId = `${++nextWorkId}-${instanceIP}`;
 
   const workItem = {
     id: workId,
-    data,
+    buffer,
     iterations: parseInt(iterations),
     timeOfArrival: Date.now()
   };
 
   workQueue.push(workItem);
-
-  // TODO: Add async workflow to check if work is handeled by worker
 
   res.json({ id: workId });
 });
@@ -68,12 +66,18 @@ app.put('/dequeue', (req, res) => {
   res.json(workItem);
 });
 
+app.put('/updateWorkDone', (req, res) => {
+  const {id, result} = req.body;
+  completeWorkQueue.push({id, result});
+  res.send('OK');
+});
+
 app.post('/pullCompleted', (req, res) => {
   const top = req.query.top;
   const numItems = parseInt(top);
 
-  const latestCompletedWork = CompleteWorkQueue.splice(0, numItems)
-  const summaryCompletedWorks = latestCompletedWork.map(({result, id} )=> ({result, id}));
+  const latestCompletedWork = completeWorkQueue.splice(0, numItems)
+  const summaryCompletedWorks = latestCompletedWork.map(({result, id} )=> ({id, result}));
 
   res.send(summaryCompletedWorks)
 });
@@ -109,6 +113,7 @@ async function startNewWorkerWithSDK() {
     echo "Running npm install..."
     sudo npm install > /dev/null
     echo "Running worker..."
+    nohup node worker.js --firstInstanceIP "${instanceIP}" --secondInstanceIP "${peerIP}" &>/dev/null &
     echo "Worker is up and running!"
     `;
 
@@ -125,24 +130,24 @@ async function startNewWorkerWithSDK() {
     const data = await ec2.runInstances(params).promise();
 
     const instanceId = data.Instances[0].InstanceId;
-    console.log(`New EC2 instance started with ID: ${instanceId}`);
+    logStream.write(`New EC2 instance started with ID: ${instanceId}`);
   } catch (error) {
     numOfCurrentWorkers--;
-    console.error('Error starting EC2 instance:', error);
+    logStream.write('Error starting EC2 instance:', error);
   }
 }
 
-function checkWorksAreHandled() {
+async function checkWorksAreHandled() {
   logStream.write('Check works are handled');
   const {timeOfArrival} = workQueue[0];
   const diff = Date.now() - timeOfArrival;
   const diffInSec = diff/ 1000;
 
   if(diffInSec > 20 && numOfCurrentWorkers < maxNumOfWorkers) {
-    startNewWorkerWithSDK();
+    await startNewWorkerWithSDK();
   }
 }
-setInterval(checkWorksAreHandled, 60000);
+setInterval(checkWorksAreHandled, 60 * 1000);
 
 app.listen(port, () => {
   logStream.write(`Example app listening on port ${port}`)
