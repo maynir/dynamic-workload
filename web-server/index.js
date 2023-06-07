@@ -158,6 +158,7 @@ async function startNewWorkerWithSDK() {
 
 async function checkWorksAreHandled() {
   log('Check works are handled...');
+  if(workQueue.length === 0 ) return log('Queue is empty');
   const {id, timeOfArrival} = workQueue[0];
   const diff = Date.now() - timeOfArrival;
   const diffInSec = diff/ 1000;
