@@ -35,7 +35,7 @@ app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   const logMessage = `${timestamp} - ${ip} - ${method} ${url} - Params: ${JSON.stringify(params)}\n`;
 
-  logStream.write(logMessage);
+  log(logMessage);
 
   next();
 });
@@ -87,13 +87,13 @@ function startNewWorker() {
   exec('./../worker/setup_worker.sh', (error, stdout, stderr) => {
     if (error) {
       numOfCurrentWorkers--;
-      logStream.write(`Error starting EC2 instance: ${error.message}`);
+      log(`Error starting EC2 instance: ${error.message}`);
     }
     if (stderr) {
       numOfCurrentWorkers--;
-      logStream.write(`Error starting EC2 instance: ${stderr}`);
+      log(`Error starting EC2 instance: ${stderr}`);
     }
-    logStream.write('EC2 instance started successfully');
+    log('EC2 instance started successfully');
   });
 }
 
@@ -130,15 +130,15 @@ async function startNewWorkerWithSDK() {
     const data = await ec2.runInstances(params).promise();
 
     const instanceId = data.Instances[0].InstanceId;
-    logStream.write(`New EC2 instance started with ID: ${instanceId}`);
+    log(`New EC2 instance started with ID: ${instanceId}`);
   } catch (error) {
     numOfCurrentWorkers--;
-    logStream.write('Error starting EC2 instance:', error);
+    log('Error starting EC2 instance:', error);
   }
 }
 
 async function checkWorksAreHandled() {
-  logStream.write('Check works are handled');
+  log('Check works are handled');
   const {timeOfArrival} = workQueue[0];
   const diff = Date.now() - timeOfArrival;
   const diffInSec = diff/ 1000;
@@ -149,8 +149,12 @@ async function checkWorksAreHandled() {
 }
 setInterval(checkWorksAreHandled, 60 * 1000);
 
+function log(msg){
+  logStream.write(`${msg}\n`);
+}
+
 app.listen(port, () => {
-  logStream.write(`Example app listening on port ${port}`)
+  log(`Example app listening on port ${port}`);
 })
 
 app.on('close', () => {
