@@ -199,10 +199,11 @@ async function startNewWorkerWithSDK() {
     const data = await ec2.runInstances(params).promise();
 
     const instanceId = data.Instances[0].InstanceId;
-    // const publicIp = data.Instances[0].PublicIpAddress;
+    const publicIp = data.Instances[0].PublicIpAddress;
     const privateIp = data.Instances[0].PrivateIpAddress;
     privateInstanceIpToInstanceId[privateIp] = instanceId;
     log(`New EC2 instance started with ID: ${instanceId}`);
+    log(`For debug: ssh -i ${keyName}.pem -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@${publicIp}`);
     log(`privateInstanceIpToInstanceId: ${JSON.stringify(privateInstanceIpToInstanceId)}`);
   } catch (error) {
     numOfCurrentWorkers--;
