@@ -108,7 +108,31 @@ app.put('/updateWorkDone', (req, res) => {
   res.send('OK');
 });
 
-app.post('/pullCompleted', (req, res) => {
+app.post('/pullCompleted', async (req, res) => {
+  const top = req.query.top;
+  const numItems = parseInt(top);
+
+  const latestCompletedWork = completeWorkQueue.splice(0, numItems)
+  let summaryCompletedWorks = latestCompletedWork.map(({result, id} )=> ({id, result}));
+
+  if(summaryCompletedWorks.length !== numItems){
+    const missingNumItems = numItems - summaryCompletedWorks.length
+    try {
+      log(`Calling peer instance: http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}`);
+      const response = await axios.post(`http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}`);
+      summaryCompletedWorks = [...summaryCompletedWorks, ...response]
+    }catch (e) {
+      log(`Error calling http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}: ${JSON.stringify(e.message)}`);
+      return res.send(summaryCompletedWorks)
+    }
+  }
+
+  log(`${numItems} latest completed works: ${JSON.stringify(summaryCompletedWorks)}`);
+
+  res.send(summaryCompletedWorks)
+});
+
+app.post('/pullCompletedFromPeer', (req, res) => {
   const top = req.query.top;
   const numItems = parseInt(top);
 
@@ -119,7 +143,6 @@ app.post('/pullCompleted', (req, res) => {
 
   res.send(summaryCompletedWorks)
 });
-
 async function startNewWorkerWithSDK() {
   numOfCurrentWorkers++;
   try {
