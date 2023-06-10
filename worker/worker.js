@@ -10,6 +10,8 @@ let isFirstInstanceTurn = true;
 const logFilePath = path.join(__dirname, 'worker.log');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 
+let lastTimeWork = Date.now();
+
 function work(buffer, iterations) {
     let output = crypto.createHash('sha512').update(buffer).digest('hex');
 
@@ -37,6 +39,7 @@ async function processWork() {
         log(`workItem: ${JSON.stringify(workItem)}`);
 
         if (Object.keys(workItem).length === 0 ) return log('No work available.');
+        lastTimeWork = Date.now();
         const { buffer, iterations, id } = workItem;
         const result = work(buffer, iterations);
 
@@ -54,8 +57,29 @@ async function processWork() {
     }
 }
 
+async function checkLastTimeWork () {
+    log("Check if worker is needed");
+    const currentTime = Date.now();
+    const fiveMinutes = 0.5 * 60 * 1000; // 5 minutes in milliseconds TODO
+
+    if (currentTime - lastTimeWork > fiveMinutes) {
+        log('Starting shut down...');
+        await terminateInstance();
+    }
+}
+
+async function terminateInstance () {
+    try {
+        log(`Calling: http://${firstInstanceIP}:5000/killWorker`);
+        await axios.delete(`http://${firstInstanceIP}:5000/killWorker`)
+    }catch (e) {
+        return log(`Error calling http://${firstInstanceIP}:5000/updateWorkDone : ${JSON.stringify(e.message)}`);
+    }
+}
+
 function log(msg){
     logStream.write(`${msg}\r\n`);
 }
 
-setInterval(processWork, 5 * 1000);
+setInterval(processWork, 5 * 1000); // 5 seconds
+setInterval(checkLastTimeWork, 60 * 1000); // 60 seconds
