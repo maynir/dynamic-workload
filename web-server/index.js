@@ -41,7 +41,8 @@ const logFilePath = path.join(__dirname, `server-${port}.log`);
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 
 app.use((req, res, next) => {
-  const { method, url, ip, params } = req;
+  let { method, url, ip, params } = req;
+  ip = ip.split(':')[3];
   const timestamp = new Date().toISOString();
   const logMessage = `${timestamp} - ${ip} - ${method} ${url} - Params: ${JSON.stringify(params)}`;
 
@@ -147,8 +148,10 @@ app.post('/pullCompletedFromPeer', (req, res) => {
 });
 
 app.delete('/killWorker', (req, res) => {
-  const { ip } = req;
+  let { ip } = req;
+  ip = ip.split(':')[3];
   const instanceId = privateInstanceIpToInstanceId[ip];
+  log(`Instance id to kill: ${instanceId}`);
   const params = { InstanceIds: [instanceId] };
 
   ec2.terminateInstances(params, (err, data) => {
@@ -158,6 +161,7 @@ app.delete('/killWorker', (req, res) => {
       res.json(err);
     } else {
       delete privateInstanceIpToInstanceId[ip];
+      numOfCurrentWorkers--;
       log(`Instance terminated: ${JSON.stringify(data.TerminatingInstances)}`);
       log(`privateInstanceIpToInstanceId: ${JSON.stringify(privateInstanceIpToInstanceId)}`);
       res.status(200);
@@ -199,11 +203,9 @@ async function startNewWorkerWithSDK() {
     const data = await ec2.runInstances(params).promise();
 
     const instanceId = data.Instances[0].InstanceId;
-    const publicIp = data.Instances[0].PublicIpAddress;
     const privateIp = data.Instances[0].PrivateIpAddress;
     privateInstanceIpToInstanceId[privateIp] = instanceId;
     log(`New EC2 instance started with ID: ${instanceId}`);
-    log(`For debug: ssh -i ${keyName}.pem -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@${publicIp}`);
     log(`privateInstanceIpToInstanceId: ${JSON.stringify(privateInstanceIpToInstanceId)}`);
   } catch (error) {
     numOfCurrentWorkers--;
