@@ -23,6 +23,7 @@ AWS.config.update({
 
 const app = express()
 const port = 5000;
+const peerPort = 5000;
 const ec2 = new AWS.EC2();
 
 app.use(cors());
@@ -35,7 +36,7 @@ let numOfCurrentWorkers = 0;
 let nextWorkId = 1;
 const maxNumOfWorkers = 3;
 
-const logFilePath = path.join(__dirname, 'server.log');
+const logFilePath = path.join(__dirname, `server-${port}.log`);
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 
 app.use((req, res, next) => {
@@ -82,13 +83,13 @@ app.put('/dequeue', async (req, res) => {
     return res.json(workItem);
   }
   try {
-    log(`Calling peer instance: http://${peerIP}:5000/dequeue-from-peer`);
-    const response = await axios.put(`http://${peerIP}:5000/dequeue-from-peer`);
+    log(`Calling peer instance: http://${peerIP}:${peerPort}/dequeue-from-peer`);
+    const response = await axios.put(`http://${peerIP}:${peerPort}/dequeue-from-peer`);
     workItem = response.data;
     log(`Work item: ${JSON.stringify(workItem)}`);
     res.json(workItem);
   }catch (e) {
-    log(`Error calling http://${peerIP}:5000/dequeue-from-peer : ${JSON.stringify(e.message)}`);
+    log(`Error calling http://${peerIP}:${peerPort}/dequeue-from-peer : ${JSON.stringify(e.message)}`);
     res.json({});
   }
 });
