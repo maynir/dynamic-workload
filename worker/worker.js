@@ -60,7 +60,7 @@ async function processWork() {
 async function checkLastTimeWork () {
     log("Check if worker is needed");
     const currentTime = Date.now();
-    const fiveMinutes = 0.5 * 60 * 1000; // 5 minutes in milliseconds TODO
+    const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     if (currentTime - lastTimeWork > fiveMinutes) {
         log('Starting shut down...');
