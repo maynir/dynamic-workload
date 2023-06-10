@@ -25,9 +25,13 @@ async function processWork() {
         const instanceIP = isFirstInstanceTurn ? firstInstanceIP : secondInstanceIP;
         isFirstInstanceTurn = !isFirstInstanceTurn;
 
-        log(`Calling: http://${instanceIP}:5000/dequeue`);
-
-        const response = await axios.put(`http://${instanceIP}:5000/dequeue`);
+        let response;
+        try{
+            log(`Calling: http://${instanceIP}:5000/dequeue`);
+            response = await axios.put(`http://${instanceIP}:5000/dequeue`);
+        }catch (e) {
+            return log(`Error calling http://${instanceIP}:5000/dequeue : ${JSON.stringify(e)}`);
+        }
         const workItem = response.data;
 
         log(`workItem: ${JSON.stringify(workItem)}`);
@@ -36,9 +40,13 @@ async function processWork() {
         const { buffer, iterations, id } = workItem;
         const result = work(buffer, iterations);
 
-        log(`Calling: http://${instanceIP}:5000/updateWorkDone, ${JSON.stringify({id, result})}`);
+        try {
+            log(`Calling: http://${instanceIP}:5000/updateWorkDone, ${JSON.stringify({id, result})}`);
+            await axios.put(`http://${instanceIP}:5000/updateWorkDone`,{id, result})
+        }catch (e) {
+            return log(`Error calling http://${instanceIP}:5000/updateWorkDone : ${JSON.stringify(e)}`);
+        }
 
-        await axios.put(`http://${instanceIP}:5000/updateWorkDone`,{id, result})
         // Do something with the result
         log('Work completed:', result);
     } catch (error) {
