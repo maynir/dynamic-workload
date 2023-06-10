@@ -79,7 +79,7 @@ app.put('/dequeue', async (req, res) => {
   if(Object.keys(workItem).length !== 0) {
     log(`Work item: ${JSON.stringify(workItem)}`);
     log(`Work queue: ${JSON.stringify(workQueue)}`);
-    res.json(workItem);
+    return res.json(workItem);
   }
   try {
     log(`Calling peer instance: http://${peerIP}:5000/dequeue-from-peer`);
