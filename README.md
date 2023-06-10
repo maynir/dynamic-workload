@@ -24,6 +24,8 @@ In this project you will find two main folders:
 
 ## Web Server API
 
+This is the required end-points:
+
 ### `/enqueue`
 
 #### Request
