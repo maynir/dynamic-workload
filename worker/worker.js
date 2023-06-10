@@ -30,7 +30,7 @@ async function processWork() {
             log(`Calling: http://${instanceIP}:5000/dequeue`);
             response = await axios.put(`http://${instanceIP}:5000/dequeue`);
         }catch (e) {
-            return log(`Error calling http://${instanceIP}:5000/dequeue : ${JSON.stringify(e)}`);
+            return log(`Error calling http://${instanceIP}:5000/dequeue : ${JSON.stringify(e.message)}`);
         }
         const workItem = response.data;
 
@@ -44,7 +44,7 @@ async function processWork() {
             log(`Calling: http://${instanceIP}:5000/updateWorkDone, ${JSON.stringify({id, result})}`);
             await axios.put(`http://${instanceIP}:5000/updateWorkDone`,{id, result})
         }catch (e) {
-            return log(`Error calling http://${instanceIP}:5000/updateWorkDone : ${JSON.stringify(e)}`);
+            return log(`Error calling http://${instanceIP}:5000/updateWorkDone : ${JSON.stringify(e.message)}`);
         }
 
         // Do something with the result
