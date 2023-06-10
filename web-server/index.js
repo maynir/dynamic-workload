@@ -83,18 +83,18 @@ app.put('/dequeue', async (req, res) => {
     return res.json(workItem);
   }
   try {
-    log(`Calling peer instance: http://${peerIP}:${peerPort}/dequeue-from-peer`);
-    const response = await axios.put(`http://${peerIP}:${peerPort}/dequeue-from-peer`);
+    log(`Calling peer instance: http://${peerIP}:${peerPort}/dequeueFromPeer`);
+    const response = await axios.put(`http://${peerIP}:${peerPort}/dequeueFromPeer`);
     workItem = response.data;
     log(`Work item: ${JSON.stringify(workItem)}`);
     res.json(workItem);
   }catch (e) {
-    log(`Error calling http://${peerIP}:${peerPort}/dequeue-from-peer : ${JSON.stringify(e.message)}`);
+    log(`Error calling http://${peerIP}:${peerPort}/dequeueFromPeer : ${JSON.stringify(e.message)}`);
     res.json({});
   }
 });
 
-app.put('/dequeue-from-peer',  (req, res) => {
+app.put('/dequeueFromPeer',  (req, res) => {
   let workItem = workQueue.shift() || {};
   log(`Work item: ${JSON.stringify(workItem)}`);
   log(`Work queue: ${JSON.stringify(workQueue)}`);
