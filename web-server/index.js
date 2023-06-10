@@ -41,10 +41,10 @@ const logFilePath = path.join(__dirname, `server-${port}.log`);
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 
 app.use((req, res, next) => {
-  let { method, url, ip, params } = req;
+  let { method, url, ip, query } = req;
   ip = ip.split(':')[3];
   const timestamp = new Date().toISOString();
-  const logMessage = `${timestamp} - ${ip} - ${method} ${url} - Params: ${JSON.stringify(params)}`;
+  const logMessage = `${timestamp} - ${ip} - ${method} ${url} - Params: ${JSON.stringify(query)}`;
 
   log('');
   log(logMessage);
