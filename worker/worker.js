@@ -25,25 +25,30 @@ async function processWork() {
         const instanceIP = isFirstInstanceTurn ? firstInstanceIP : secondInstanceIP;
         isFirstInstanceTurn = !isFirstInstanceTurn;
 
-        log(`Calling: http://${instanceIP}:5000/dequeue`);
-
-        const response = await axios.put(`http://${instanceIP}:5000/dequeue`);
+        let response;
+        try{
+            log(`Calling: http://${instanceIP}:5000/dequeue`);
+            response = await axios.put(`http://${instanceIP}:5000/dequeue`);
+        }catch (e) {
+            return log(`Error calling http://${instanceIP}:5000/dequeue : ${JSON.stringify(e.message)}`);
+        }
         const workItem = response.data;
 
         log(`workItem: ${JSON.stringify(workItem)}`);
 
-        if (Object.keys(workItem).length !== 0 ) {
-            const { buffer, iterations, id } = workItem;
-            const result = work(buffer, iterations);
+        if (Object.keys(workItem).length === 0 ) return log('No work available.');
+        const { buffer, iterations, id } = workItem;
+        const result = work(buffer, iterations);
 
+        try {
             log(`Calling: http://${instanceIP}:5000/updateWorkDone, ${JSON.stringify({id, result})}`);
-
             await axios.put(`http://${instanceIP}:5000/updateWorkDone`,{id, result})
-            // Do something with the result
-            log('Work completed:', result);
-        } else {
-            log('No work available.');
+        }catch (e) {
+            return log(`Error calling http://${instanceIP}:5000/updateWorkDone : ${JSON.stringify(e.message)}`);
         }
+
+        // Do something with the result
+        log('Work completed:', result);
     } catch (error) {
         log(`Error occurred while processing work: ${JSON.stringify(error)}`);
     }
@@ -54,10 +59,3 @@ function log(msg){
 }
 
 setInterval(processWork, 5 * 1000);
-
-// const data = 'Hello, world!';
-// const buffer = Buffer.from(data, 'utf-8');
-
-// const hashedBuffer = work(buffer, 10);
-//
-// console.log(hashedBuffer.toString('hex')); // Output the hashed buffer as a hexadecimal string

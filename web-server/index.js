@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const AWS = require('aws-sdk');
+const axios = require('axios');
 
 // Parse command-line arguments
 const instanceIP = process.argv[3];
@@ -21,7 +22,8 @@ AWS.config.update({
 });
 
 const app = express()
-const port = 5000
+const port = 5000;
+const peerPort = 5000;
 const ec2 = new AWS.EC2();
 
 app.use(cors());
@@ -34,7 +36,7 @@ let numOfCurrentWorkers = 0;
 let nextWorkId = 1;
 const maxNumOfWorkers = 3;
 
-const logFilePath = path.join(__dirname, 'server.log');
+const logFilePath = path.join(__dirname, `server-${port}.log`);
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 
 app.use((req, res, next) => {
@@ -73,8 +75,27 @@ app.put('/enqueue', (req, res) => {
   res.json({ id: workId });
 });
 
-app.put('/dequeue', (req, res) => {
-  const workItem = workQueue.shift() || {};
+app.put('/dequeue', async (req, res) => {
+  let workItem = workQueue.shift() || {};
+  if(Object.keys(workItem).length !== 0) {
+    log(`Work item: ${JSON.stringify(workItem)}`);
+    log(`Work queue: ${JSON.stringify(workQueue)}`);
+    return res.json(workItem);
+  }
+  try {
+    log(`Calling peer instance: http://${peerIP}:${peerPort}/dequeueFromPeer`);
+    const response = await axios.put(`http://${peerIP}:${peerPort}/dequeueFromPeer`);
+    workItem = response.data;
+    log(`Work item: ${JSON.stringify(workItem)}`);
+    res.json(workItem);
+  }catch (e) {
+    log(`Error calling http://${peerIP}:${peerPort}/dequeueFromPeer : ${JSON.stringify(e.message)}`);
+    res.json({});
+  }
+});
+
+app.put('/dequeueFromPeer',  (req, res) => {
+  let workItem = workQueue.shift() || {};
   log(`Work item: ${JSON.stringify(workItem)}`);
   log(`Work queue: ${JSON.stringify(workQueue)}`);
   res.json(workItem);
@@ -87,7 +108,32 @@ app.put('/updateWorkDone', (req, res) => {
   res.send('OK');
 });
 
-app.post('/pullCompleted', (req, res) => {
+app.post('/pullCompleted', async (req, res) => {
+  const top = req.query.top;
+  const numItems = parseInt(top);
+
+  const latestCompletedWork = completeWorkQueue.splice(0, numItems)
+  let summaryCompletedWorks = latestCompletedWork.map(({result, id} )=> ({id, result}));
+
+  if(summaryCompletedWorks.length !== numItems){
+    const missingNumItems = numItems - summaryCompletedWorks.length
+    try {
+      log(`Calling peer instance: http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}`);
+      const response = await axios.post(`http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}`);
+      const peerSummaryCompletedWorks = response.data;
+      summaryCompletedWorks = [...summaryCompletedWorks, ...peerSummaryCompletedWorks]
+    }catch (e) {
+      log(`Error calling http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}: ${JSON.stringify(e.message)}`);
+      return res.send(summaryCompletedWorks)
+    }
+  }
+
+  log(`${numItems} latest completed works: ${JSON.stringify(summaryCompletedWorks)}`);
+
+  res.send(summaryCompletedWorks)
+});
+
+app.post('/pullCompletedFromPeer', (req, res) => {
   const top = req.query.top;
   const numItems = parseInt(top);
 
@@ -98,7 +144,6 @@ app.post('/pullCompleted', (req, res) => {
 
   res.send(summaryCompletedWorks)
 });
-
 async function startNewWorkerWithSDK() {
   numOfCurrentWorkers++;
   try {
