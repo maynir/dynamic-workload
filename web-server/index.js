@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const AWS = require('aws-sdk');
+const axios = require('axios');
 
 // Parse command-line arguments
 const instanceIP = process.argv[3];
@@ -73,11 +74,23 @@ app.put('/enqueue', (req, res) => {
   res.json({ id: workId });
 });
 
-app.put('/dequeue', (req, res) => {
-  const workItem = workQueue.shift() || {};
-  log(`Work item: ${JSON.stringify(workItem)}`);
-  log(`Work queue: ${JSON.stringify(workQueue)}`);
-  res.json(workItem);
+app.put('/dequeue', async (req, res) => {
+  let workItem = workQueue.shift() || {};
+  if(Object.keys(workItem).length !== 0) {
+    log(`Work item: ${JSON.stringify(workItem)}`);
+    log(`Work queue: ${JSON.stringify(workQueue)}`);
+    res.json(workItem);
+  }
+  try {
+    log(`Calling peer instance: http://${peerIP}:5000/dequeue`);
+    const response = await axios.put(`http://${peerIP}:5000/dequeue`);
+    workItem = response.data;
+    log(`Work item: ${JSON.stringify(workItem)}`);
+    res.json(workItem);
+  }catch (e) {
+    log(`Error calling http://${peerIP}:5000/dequeue : ${JSON.stringify(e.message)}`);
+    res.json({});
+  }
 });
 
 app.put('/updateWorkDone', (req, res) => {
