@@ -120,7 +120,8 @@ app.post('/pullCompleted', async (req, res) => {
     try {
       log(`Calling peer instance: http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}`);
       const response = await axios.post(`http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}`);
-      summaryCompletedWorks = [...summaryCompletedWorks, ...response]
+      const peerSummaryCompletedWorks = response.data;
+      summaryCompletedWorks = [...summaryCompletedWorks, ...peerSummaryCompletedWorks]
     }catch (e) {
       log(`Error calling http://${peerIP}:${peerPort}/pullCompletedFromPeer?top=${missingNumItems}: ${JSON.stringify(e.message)}`);
       return res.send(summaryCompletedWorks)
